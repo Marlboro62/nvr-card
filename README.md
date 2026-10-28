@@ -35,6 +35,7 @@ Un seul fichier JavaScript, sans dépendance.
 ## Fonctionnalités
 
 - **Direct** de la caméra (lecteur intégré de Home Assistant, repli MJPEG automatique).
+- **Lien direct go2rtc** (facultatif) : bouton ↗ qui ouvre la page `stream.html` de go2rtc, et option pour l'utiliser comme lecteur du direct dans la carte.
 - **Mosaïque** en direct quand plusieurs caméras sont configurées, onglets pour passer de l'une à l'autre.
 - **Frise 24 h** : plages enregistrées en vert, détections en orange, zoom 24 h / 6 h / 1 h.
 - **Curseur glissable** sur la frise (souris ou doigt) : la vidéo suit en direct pendant le glisser.
@@ -112,6 +113,8 @@ osd: false
 | `cameras[].title` | nom de l'entité | Nom affiché. |
 | `cameras[].media_root` | — | Dossier des enregistrements. Vide = direct seulement. |
 | `cameras[].snap_folder` | `snap` | Sous-dossier des photos dans chaque jour. |
+| `cameras[].go2rtc_url` | — | Lien direct go2rtc, par exemple `http://192.168.1.50:1984/stream.html?src=camera`. Ajoute un bouton ↗ qui l'ouvre dans un nouvel onglet. |
+| `cameras[].go2rtc_live` | `false` | Utilise ce lien comme lecteur du direct dans la carte (WebRTC ou MSE de go2rtc, plus réactif). |
 | `live_layout` | `grid` | `grid` (mosaïque) ou `single` (une caméra à la fois) quand il y a plusieurs caméras. |
 | `aspect_ratio` | `16/9` | Format du lecteur. |
 | `max_height` | `70vh` | Hauteur maximale du lecteur. |
@@ -137,6 +140,8 @@ actions:
 - `&nvr_cam=camera.xxx` : sélectionne une caméra précise (configuration multi-caméras).
 
 ## Bon à savoir
+
+- **Direct go2rtc dans la carte** (`go2rtc_live`) : le lien doit être joignable par l'appareil qui affiche la carte. Depuis une adresse **https** (accès à distance), un lien **http** est bloqué par le navigateur (contenu mixte) : la carte garde alors le direct de Home Assistant, et le bouton ↗ ouvre go2rtc dans un nouvel onglet.
 
 - **Format vidéo** : les navigateurs lisent le MP4/H.264 partout. Le MKV en H.264 passe en général sur Chrome et Edge, pas sur Firefox ni Safari/iOS. Le H.265 n'est quasiment lu nulle part. En cas d'échec, la carte propose le téléchargement pour une lecture dans VLC.
 - **Positionnement dans la vidéo** : il nécessite des fichiers avec index de navigation. Certains enregistrements MKV écrits en continu n'en ont pas.

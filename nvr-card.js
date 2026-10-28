@@ -1,6 +1,7 @@
 /*
  * NVR Card — carte Home Assistant façon enregistreur vidéo (NVR)
  * - Direct (ha-camera-stream, repli MJPEG), mosaïque si plusieurs caméras
+ * - Lien direct go2rtc (stream.html) : bouton qui l'ouvre, et en option lecteur du direct
  * - Frise 24 h : plages enregistrées + événements (rafales de photos), curseur glissable
  * - Lecture des vidéos horaires avec saut à l'heure cliquée, vitesse x1..x8
  * - Visionneuse des snaps, navigation événement par événement
@@ -12,7 +13,7 @@
  *   <media_root>/JJ.MM.AAAA/HHhMM.mkv
  *   <media_root>/JJ.MM.AAAA/<snap_folder>/HHhMM/HHhMMmSSs.jpg (ou HHhMMmSSs_1.jpg … _6.jpg pour une rafale)
  */
-const NVR_VERSION = '2.0.1-beta.1';
+const NVR_VERSION = '2.1.0-beta.1';
 const DAY = 86400;
 const ZOOMS = [24, 6, 1];
 const SPEEDS = [1, 2, 4, 8];
@@ -68,6 +69,7 @@ select{background:#0b0d10;color:inherit;border:1px solid #2a323c;border-radius:6
 .mosaic{display:grid;gap:2px;background:#000;grid-auto-rows:1fr}
 .tile{position:relative;overflow:hidden;cursor:pointer;background:#05070a}
 .tile>ha-camera-stream,.tile>img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.g2r-frame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
 .tile .lbl{position:absolute;left:6px;top:6px;font:12px ui-monospace,monospace;color:#fff;text-shadow:0 0 3px #000,0 0 6px #000;z-index:1;pointer-events:none}
 .tile:hover{outline:2px solid #4fc3f7;outline-offset:-2px}
 .osd{position:absolute;top:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;color:#fff;text-shadow:0 0 3px #000,0 0 6px #000;pointer-events:none}
@@ -149,6 +151,8 @@ class NvrCard extends HTMLElement {
       title: c.title || '',
       media_root: String(c.media_root || '').replace(/\/+$/, ''),
       snap_folder: c.snap_folder || config.snap_folder || DEFAULTS.snap_folder,
+      go2rtc_url: String(c.go2rtc_url || '').trim(),
+      go2rtc_live: c.go2rtc_live === true,
     }));
     if (!cams.length) throw new Error('Choisis au moins une caméra (éditeur visuel)');
     this._config = Object.assign({}, DEFAULTS, config);
@@ -211,6 +215,7 @@ class NvrCard extends HTMLElement {
       <button class="ib" data-a="newer" title="Jour suivant"><ha-icon icon="mdi:chevron-right"></ha-icon></button>
     </div>
     <button class="ib gridbtn" data-a="grid" title="Mosaïque" ${multi ? '' : 'hidden'}><ha-icon icon="mdi:view-grid"></ha-icon></button>
+    <button class="ib g2r" data-a="go2rtc" title="Ouvrir le direct go2rtc" hidden><ha-icon icon="mdi:open-in-new"></ha-icon></button>
     <button class="live" data-a="live"><span class="ldot"></span>LIVE</button>
   </div>
   <div class="viewer">
@@ -253,7 +258,7 @@ class NvrCard extends HTMLElement {
     if (this._config.max_height) viewer.style.maxHeight = this._config.max_height;
     if (this._config.osd === false) q('.osd.tl').style.display = q('.osd.tr').style.display = 'none';
     this.$ = {
-      card: q('ha-card'), camname: q('.camname'), tabs: q('.tabs'), gridbtn: q('.gridbtn'), days: q('.days'), viewer, stage: q('.stage'),
+      card: q('ha-card'), camname: q('.camname'), tabs: q('.tabs'), gridbtn: q('.gridbtn'), g2r: q('.g2r'), days: q('.days'), viewer, stage: q('.stage'),
       tl: q('.osd.tl'), tr: q('.osd.tr'), badge: q('.badge'), msg: q('.msg'), toast: q('.toast'),
       clock: q('.clock'), playicon: q('.playicon'), speed: q('[data-a="speed"]'), zoom: q('[data-a="zoom"]'),
       ticks: q('.ticks'), track: q('.track'), segs: q('.segs'), marks: q('.marks'), cursor: q('.cursor'),
@@ -287,6 +292,22 @@ class NvrCard extends HTMLElement {
     this.$.tabs.innerHTML = this._cams.map((c, i) =>
       `<button class="tab ${i === this._camIdx && !this._grid ? 'on' : ''}" data-a="cam" data-i="${i}">${esc(this._camName(c))}</button>`).join('');
     this.$.gridbtn.classList.toggle('on', this._grid);
+    const g = this._g2r(this._cam);
+    this.$.g2r.hidden = !g || this._grid;
+    if (g) this.$.g2r.title = `Ouvrir le direct go2rtc (${g})`;
+  }
+
+  /** Lien go2rtc de la caméra (page stream.html du flux). */
+  _g2r(cam) {
+    const u = cam && cam.go2rtc_url;
+    if (!u) return '';
+    return u;
+  }
+
+  /** go2rtc en lecteur du direct : impossible depuis une page https vers une adresse http (contenu mixte). */
+  _g2rPlayable(cam) {
+    const u = this._g2r(cam);
+    return !!u && cam.go2rtc_live && !(location.protocol === 'https:' && /^http:/i.test(u));
   }
 
   async _start() {
@@ -605,7 +626,14 @@ class NvrCard extends HTMLElement {
       await this._ensureStreamElement(ent);
       const so = this._hass.states[ent];
       let el;
-      if (!so) {
+      const cam = this._cams.find((c) => c.entity === ent);
+      if (cam && this._g2rPlayable(cam)) {
+        el = document.createElement('iframe');
+        el.className = 'g2r-frame';
+        el.src = this._g2r(cam);
+        el.allow = 'autoplay; fullscreen';
+        el.setAttribute('referrerpolicy', 'no-referrer');
+      } else if (!so) {
         el = document.createElement('div');
         el.className = 'empty';
         el.textContent = `Entité ${ent} introuvable`;
@@ -895,6 +923,7 @@ class NvrCard extends HTMLElement {
     const pre = +this._config.preroll || 0;
     switch (a) {
       case 'live': this._grid = false; this._showLive(); break;
+      case 'go2rtc': { const u = this._g2r(this._cam); if (u) window.open(u, '_blank', 'noopener'); break; }
       case 'grid': this._grid = true; this._showLive(); break;
       case 'cam': this._selectCam(+el.dataset.i); break;
       case 'older': if (this._dayIdx < this._days.length - 1) this._loadDay(this._dayIdx + 1); break;
@@ -999,6 +1028,8 @@ const LABELS = {
   title: 'Nom affiché (facultatif)',
   media_root: 'Dossier des enregistrements',
   snap_folder: 'Sous-dossier des photos',
+  go2rtc_url: 'Lien direct go2rtc (facultatif)',
+  go2rtc_live: 'Utiliser go2rtc pour le direct',
   live_layout: 'Direct avec plusieurs caméras',
   aspect_ratio: 'Format de l\'image',
   max_height: 'Hauteur maximale',
@@ -1010,6 +1041,8 @@ const LABELS = {
 const HELPERS = {
   media_root: 'Dossier qui contient les sous-dossiers JJ.MM.AAAA. Vide = direct seulement.',
   snap_folder: 'Nom du dossier des photos dans chaque jour (par défaut : snap).',
+  go2rtc_url: 'Par exemple http://192.168.1.50:1984/stream.html?src=camera. Ajoute un bouton qui ouvre ce direct.',
+  go2rtc_live: 'Affiche ce direct dans la carte (plus réactif). Pas depuis une adresse https vers un lien http : le direct de Home Assistant est alors gardé.',
   max_height: 'Par exemple 60vh ou 500px.',
   event_gap: 'Photos espacées de moins de X secondes = un seul événement.',
   osd: 'À désactiver si la caméra incruste déjà la date et son nom.',
@@ -1095,6 +1128,8 @@ class NvrCardEditor extends HTMLElement {
       { name: 'title', selector: { text: {} } },
       { name: 'media_root', selector: folder },
       { name: 'snap_folder', selector: { text: {} } },
+      { name: 'go2rtc_url', selector: { text: {} } },
+      { name: 'go2rtc_live', selector: { boolean: {} } },
     ];
   }
 
@@ -1109,7 +1144,7 @@ class NvrCardEditor extends HTMLElement {
         { name: 'max_height', selector: { text: {} } },
       ] },
       { name: '', type: 'grid', schema: [
-        { name: 'event_gap', selector: { number: { min: 0, max: 900, step: 5, mode: 'box', unit_of_measurement: 's' } } },
+        { name: 'event_gap', selector: { number: { min: 0, max: 900, step: 1, mode: 'box', unit_of_measurement: 's' } } },
         { name: 'preroll', selector: { number: { min: 0, max: 120, step: 1, mode: 'box', unit_of_measurement: 's' } } },
         { name: 'refresh', selector: { number: { min: 15, max: 900, step: 5, mode: 'box', unit_of_measurement: 's' } } },
       ] },
