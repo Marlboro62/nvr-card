@@ -55,6 +55,7 @@ Les fichiers doivent être accessibles dans le navigateur multimédia de Home As
     snap/                     ← sous-dossier des photos (nom configurable)
       13h00/                  ← un sous-dossier par heure
         13h54m12s.jpg …       ← photos nommées HHhMMmSSs.jpg
+        13h54m12s_1.jpg …     ← ou rafale HHhMMmSSs_1.jpg, _2.jpg…
 ```
 
 ## Installation

@@ -10,9 +10,9 @@
  *
  * Arborescence attendue par caméra :
  *   <media_root>/JJ.MM.AAAA/HHhMM.mkv
- *   <media_root>/JJ.MM.AAAA/<snap_folder>/HHhMM/HHhMMmSSs.jpg
+ *   <media_root>/JJ.MM.AAAA/<snap_folder>/HHhMM/HHhMMmSSs.jpg (ou HHhMMmSSs_1.jpg … _6.jpg pour une rafale)
  */
-const NVR_VERSION = '2.0.0';
+const NVR_VERSION = '2.0.1-beta.1';
 const DAY = 86400;
 const ZOOMS = [24, 6, 1];
 const SPEEDS = [1, 2, 4, 8];
@@ -402,8 +402,9 @@ class NvrCard extends HTMLElement {
         const hours = (await this._browse(snapDir.media_content_id)).filter((h) => h.can_expand);
         const lists = await Promise.all(hours.map((h) => this._browse(h.media_content_id).catch(() => [])));
         for (const f of lists.flat()) {
-          const m = f.title.match(/^(\d{1,2})h(\d{2})m(\d{2})s\.(jpe?g|png)$/i);
-          if (m) snaps.push({ sec: +m[1] * 3600 + +m[2] * 60 + +m[3], id: f.media_content_id, title: f.title });
+          // « 17h25m12s.jpg », ou une rafale « 17h25m12s_1.jpg » … « _6.jpg »
+          const m = f.title.match(/^(\d{1,2})h(\d{2})m(\d{2})s(?:[_-](\d+))?\.(jpe?g|png)$/i);
+          if (m) snaps.push({ sec: +m[1] * 3600 + +m[2] * 60 + +m[3], n: +(m[4] || 0), id: f.media_content_id, title: f.title });
         }
       }
     } catch (e) {
@@ -417,7 +418,7 @@ class NvrCard extends HTMLElement {
       const next = videos[i + 1];
       return Object.assign(v, { end: Math.min(v.start + 3600, next ? next.start : DAY) });
     });
-    snaps.sort((a, b) => a.sec - b.sec);
+    snaps.sort((a, b) => a.sec - b.sec || a.n - b.n);
     const gap = +this._config.event_gap || 0;
     const events = [];
     for (const s of snaps) {
