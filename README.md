@@ -32,11 +32,11 @@ Carte Lovelace pour Home Assistant qui transforme le tableau de bord en **enregi
 
 Un seul fichier JavaScript, sans dépendance.
 
-**[▶ Essayer la démo en ligne](https://marlboro62.github.io/nvr-card/docs/demo.html)** : la carte avec des images et des vidéos simulées (une ou deux caméras, frise, rafales de photos, lecture).
+**[▶ Essayer la démo en ligne](https://marlboro62.github.io/nvr-card/docs/demo.html)** : direct, frise, rafales de photos et lecture, avec une vraie vidéo libre de droits.
 
 ![NVR Card](images/nvr.png)
 
-*Aperçu réalisé avec la démo : images dessinées, aucune caméra réelle.*
+*Aperçu réalisé avec la démo. Vidéo : [« Balaclava assailant steals computer from car »](https://mixkit.co/free-stock-video/balaclava-assailant-steals-computer-from-car-31363/), [Mixkit](https://mixkit.co/), [licence Mixkit](https://mixkit.co/license/#videoFree) (scène jouée par des acteurs).*
 
 ## Fonctionnalités
 
