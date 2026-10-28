@@ -13,7 +13,7 @@
  *   <media_root>/JJ.MM.AAAA/HHhMM.mkv
  *   <media_root>/JJ.MM.AAAA/<snap_folder>/HHhMM/HHhMMmSSs.jpg (ou HHhMMmSSs_1.jpg … _6.jpg pour une rafale)
  */
-const NVR_VERSION = '2.1.0-beta.1';
+const NVR_VERSION = '2.1.0';
 const DAY = 86400;
 const ZOOMS = [24, 6, 1];
 const SPEEDS = [1, 2, 4, 8];
