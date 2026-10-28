@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NVR Card · démo</title>
+<meta name="description" content="Démonstration de la carte Lovelace NVR Card : direct, frise 24 h, détections et vidéos, avec des données simulées.">
+<style>
+  :root { --bg: #0f1724; --panel: #172133; --line: #2a3850; --text: #e7edf5; --muted: #8fa0b8; --accent: #e53935; --accent2: #1d93e3;
+    --btn: #1e2a3f; --btn-on: #2b3d5c; --card-background-color: #11151a; --primary-text-color: #e1e1e1; --secondary-text-color: #9b9b9b;
+    --divider-color: rgba(225, 225, 225, .12); color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  a { color: var(--accent2); }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 28px 16px 48px; }
+  .top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
+  .top svg { width: 44px; height: 44px; flex: none; }
+  h1 { font-size: 1.5rem; margin: 0; line-height: 1.2; }
+  .lead { margin: 2px 0 0; color: var(--muted); }
+  .badge { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; font-size: .75rem; font-weight: 600; background: var(--btn-on); vertical-align: middle; }
+  .links { margin-left: auto; display: flex; gap: 14px; font-size: .9rem; }
+  .grid { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .links { margin-left: 0; } .stage { order: -1; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  .panel h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 10px; }
+  .panel h2:not(:first-child) { margin-top: 18px; }
+  .ctl { margin-bottom: 14px; }
+  .ctl-l { font-size: .85rem; margin-bottom: 6px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button { font: inherit; font-size: .82rem; padding: 5px 11px; border-radius: 999px; cursor: pointer; border: 1px solid var(--line); background: var(--btn); color: var(--text); }
+  .seg button[aria-pressed="true"] { background: var(--btn-on); border-color: var(--accent2); font-weight: 600; }
+  .seg button:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
+  .stage { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .frame { margin: 0 auto; width: 100%; transition: max-width .25s ease; }
+  .frame[data-width="mobile"] { max-width: 440px; }
+  .frame[data-width="large"] { max-width: 900px; }
+  .hint { font-size: .82rem; color: var(--muted); text-align: center; margin: 0; }
+  pre { margin: 0; padding: 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); font: 13px/1.5 ui-monospace, Menlo, Consolas, monospace; overflow-x: auto; white-space: pre; }
+  .yaml-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .yaml-h h2 { margin: 0; }
+  .copy { font: inherit; font-size: .8rem; padding: 4px 10px; border-radius: 8px; cursor: pointer; border: 1px solid var(--line); background: var(--btn); color: var(--text); }
+  .note { font-size: .82rem; color: var(--muted); margin: 18px 0 0; }
+  @media (prefers-reduced-motion: reduce) { .frame { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="8" width="20" height="16" rx="3" fill="none" stroke="#e53935" stroke-width="2.4"/><path d="M23 13l6-3v12l-6-3z" fill="#e53935"/><circle cx="9" cy="13" r="2" fill="#1d93e3"/></svg>
+    <div>
+      <h1>NVR Card <span class="badge" id="ver">démo</span></h1>
+      <p class="lead">Enregistreur vidéo pour Home Assistant · données simulées, sans Home Assistant</p>
+    </div>
+    <nav class="links">
+      <a href="https://github.com/Marlboro62/nvr-card">Dépôt GitHub</a>
+      <a href="https://github.com/Marlboro62/nvr-card#installation">Installation</a>
+    </nav>
+  </header>
+
+  <div class="grid">
+    <aside class="panel" aria-label="Réglages de la démo">
+      <h2>Affichage</h2>
+      <div class="ctl"><div class="ctl-l">Caméras</div><div class="seg" data-key="cams">
+        <button data-v="1">Une caméra</button><button data-v="2">Deux caméras</button></div></div>
+      <div class="ctl"><div class="ctl-l">Direct avec deux caméras (<code>live_layout</code>)</div><div class="seg" data-key="layout">
+        <button data-v="grid">Mosaïque</button><button data-v="single">Onglets</button></div></div>
+      <div class="ctl"><div class="ctl-l">Largeur</div><div class="seg" data-key="width">
+        <button data-v="mobile">Téléphone</button><button data-v="large">Tablette / PC</button></div></div>
+      <div class="ctl"><div class="ctl-l">Incrustation nom et heure (<code>osd</code>)</div><div class="seg" data-key="osd">
+        <button data-v="true">Oui</button><button data-v="false">Non</button></div></div>
+      <h2>Détections</h2>
+      <div class="ctl"><div class="ctl-l">Regroupement des photos (<code>event_gap</code>)</div><div class="seg" data-key="gap">
+        <button data-v="3">3 s : une rafale</button><button data-v="60">60 s</button></div></div>
+      <p class="note">Chaque détection est une rafale de 6 photos (<code>HHhMMmSSs_1.jpg</code> à <code>_6.jpg</code>). Il n'y a pas
+        d'enregistrement entre 3 h et 4 h : la frise montre le trou.</p>
+    </aside>
+
+    <main class="stage">
+      <div class="frame" id="frame"></div>
+      <p class="hint">Cliquez sur la frise ou sur une vignette, faites défiler les photos, lancez la vidéo, changez de jour.
+        Rien n'est supprimé ni envoyé : tout reste dans cette page.</p>
+      <section class="panel">
+        <div class="yaml-h"><h2>Configuration</h2><button class="copy" id="copy">Copier</button></div>
+        <pre id="yaml"></pre>
+      </section>
+    </main>
+  </div>
+
+  <p class="note">Les images et les vidéos sont dessinées par la page et ne viennent d'aucune caméra réelle. Dans Home Assistant, la carte lit
+    vos dossiers d'enregistrements (médias locaux ou partage réseau) : voir le <a href="https://github.com/Marlboro62/nvr-card#readme">README</a>.</p>
+</div>
+
+<!-- La carte, telle qu'elle est publiée dans le dépôt -->
+<script src="../nvr-card.js"></script>
+<script>
+(() => {
+  "use strict";
+
+  /* Home Assistant fournit <ha-card> et <ha-icon>. Ici, <ha-icon> affiche les icônes Material Design Icons. */
+  if (!customElements.get("ha-card")) {
+    customElements.define("ha-card", class extends HTMLElement {
+      constructor() { super(); this.attachShadow({ mode: "open" }).innerHTML = "<style>:host{display:block}</style><slot></slot>"; }
+    });
+  }
+  if (!customElements.get("ha-icon")) {
+    customElements.define("ha-icon", class extends HTMLElement {
+      static get observedAttributes() { return ["icon"]; }
+      connectedCallback() { this._draw(); }
+      attributeChangedCallback() { this._draw(); }
+      _draw() {
+        const name = (this.getAttribute("icon") || "").replace(/^mdi:/, "");
+        if (!name) return;
+        const url = `https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/${name}.svg`;
+        this.style.cssText = `display:inline-block;width:var(--mdc-icon-size,24px);height:var(--mdc-icon-size,24px);flex:none;` +
+          `background:currentColor;-webkit-mask:url(${url}) center/contain no-repeat;mask:url(${url}) center/contain no-repeat;`;
+      }
+    });
+  }
+
+  const defaults = { cams: "1", layout: "grid", width: "large", osd: "true", gap: "3" };
+  let state = { ...defaults };
+  try { state = { ...defaults, ...JSON.parse(localStorage.getItem("nvr-card-demo") || "{}") }; } catch (e) { /* ignoré */ }
+
+  /* ---------- images dessinées : une entrée et un jardin imaginaires ---------- */
+  const CAMS = {
+    "camera.entree": { name: "Entrée", wall: "#d9dde3", floor: "#8d939b", accent: "#5c6b7d" },
+    "camera.jardin": { name: "Jardin", wall: "#6d8a5a", floor: "#4f6b3e", accent: "#8a6d4f" },
+  };
+  const scene = (ent, who, x, night) => {
+    const c = CAMS[ent];
+    const sky = night ? "#1d2633" : ent === "camera.jardin" ? "#9cc3e6" : "#b9c2cc";
+    const fig = who === "chat"
+      ? `<g transform="translate(${x} 300)"><ellipse cx="0" cy="0" rx="34" ry="16" fill="#2b2b2b"/><circle cx="34" cy="-12" r="12" fill="#2b2b2b"/><path d="M28-22l4-10 5 10M38-22l4-10 4 11" fill="#2b2b2b"/><path d="M-34 0q-22-6-24-30" stroke="#2b2b2b" stroke-width="5" fill="none"/></g>`
+      : who === "personne"
+        ? `<g transform="translate(${x} 200)"><circle cx="0" cy="0" r="16" fill="#3a4a63"/><rect x="-20" y="18" width="40" height="70" rx="12" fill="#3a4a63"/><rect x="-16" y="86" width="12" height="40" fill="#2e3b50"/><rect x="4" y="86" width="12" height="40" fill="#2e3b50"/></g>`
+        : "";
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360"><rect width="640" height="360" fill="${sky}"/>` +
+      (ent === "camera.jardin"
+        ? `<rect y="230" width="640" height="130" fill="${c.floor}"/><rect x="40" y="120" width="90" height="140" fill="${c.accent}"/><circle cx="520" cy="150" r="70" fill="#3f6a32"/><rect x="510" y="200" width="20" height="60" fill="#5b4632"/>`
+        : `<rect width="420" height="360" fill="${c.wall}"/><polygon points="420,0 640,0 640,360 420,360" fill="#aab2bc"/><rect y="270" width="640" height="90" fill="${c.floor}"/><rect x="470" y="90" width="110" height="190" fill="${c.accent}"/><circle cx="560" cy="190" r="5" fill="#d7c16b"/><path d="M0 270 60 210h80l-60 60z" fill="#7a8088"/>`) +
+      fig + (night ? `<rect width="640" height="360" fill="#0a1a10" opacity=".35"/>` : "") + `</svg>`;
+  };
+  const svgUrl = (s) => "data:image/svg+xml," + encodeURIComponent(s);
+  // Direct : la même scène avec un chat qui traverse, en boucle
+  const live = (ent) => svgUrl(scene(ent, "", 0, false).replace("</svg>",
+    `<g><g transform="translate(0 300)"><ellipse cx="0" cy="0" rx="34" ry="16" fill="#2b2b2b"/><circle cx="34" cy="-12" r="12" fill="#2b2b2b"/></g>` +
+    `<animateTransform attributeName="transform" type="translate" from="-80 0" to="720 0" dur="9s" repeatCount="indefinite"/></g></svg>`));
+
+  /* ---------- arborescence simulée : JJ.MM.AAAA/HHh00.webm et snap/HHh00/HHhMMmSSs_N.jpg ---------- */
+  const pad = (n) => String(n).padStart(2, "0");
+  const dayName = (d) => `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
+  let seed = 7;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const TREE = {};
+  function buildTree() {
+    seed = 7;
+    for (const ent of Object.keys(CAMS)) {
+      const root = `demo://${ent}`;
+      const days = [];
+      for (let k = 0; k < 3; k++) {
+        const d = new Date(Date.now() - k * 86400e3);
+        const last = k === 0 ? new Date().getHours() : 23;
+        const name = dayName(d), id = `${root}/${name}`;
+        days.push({ title: name, media_content_id: id, can_expand: true });
+        const kids = [];
+        for (let h = 0; h <= last; h++) if (h !== 3) kids.push({ title: `${pad(h)}h00.webm`, media_content_id: `${id}/${pad(h)}h00.webm`, can_expand: false });
+        kids.push({ title: "snap", media_content_id: `${id}/snap`, can_expand: true });
+        TREE[id] = kids;
+        const hours = {};
+        const n = ent === "camera.jardin" ? 9 : 16;
+        for (let e = 0; e < n; e++) {
+          const h = Math.floor(6 + rnd() * 16);
+          if (h > last || (k === 0 && h === last)) continue;
+          const m = Math.floor(rnd() * 60), s = Math.floor(rnd() * 60), who = rnd() < .55 ? "chat" : "personne";
+          const bursts = rnd() < .2 ? 3 : 1;
+          for (let b = 0; b < bursts; b++) {
+            const sec = s + b * 7, mm = m + Math.floor(sec / 60), ss = sec % 60;
+            if (mm > 59) continue;
+            const base = `${pad(h)}h${pad(mm)}m${pad(ss)}s`;
+            const hid = `${id}/snap/${pad(h)}h00`;
+            (hours[hid] ||= []);
+            for (let i = 1; i <= 6; i++) hours[hid].push({ title: `${base}_${i}.jpg`, media_content_id: `${hid}/${base}_${i}.jpg|${ent}|${who}|${i + b * 6}|${h}`, can_expand: false });
+          }
+        }
+        TREE[`${id}/snap`] = Object.keys(hours).sort().map((hid) => ({ title: hid.split("/").pop(), media_content_id: hid, can_expand: true }));
+        Object.assign(TREE, hours);
+      }
+      TREE[root] = days;
+    }
+  }
+  buildTree();
+
+  const toastTimers = {};
+  const hass = () => ({
+    states: Object.fromEntries(Object.entries(CAMS).map(([id, c]) => [id, { entity_id: id, state: "idle", attributes: { friendly_name: c.name, access_token: "demo" } }])),
+    themes: { darkMode: true }, language: "fr",
+    hassUrl: (p) => {
+      const m = /camera_proxy_stream\/([^?]+)/.exec(p);
+      return m ? live(m[1]) : p;
+    },
+    callWS: async (msg) => {
+      if (msg.type === "media_source/browse_media") {
+        const kids = TREE[msg.media_content_id];
+        if (!kids) throw new Error("Dossier introuvable");
+        return { children: kids };
+      }
+      if (msg.type === "media_source/resolve_media") {
+        const id = msg.media_content_id;
+        if (/\.webm$/.test(id)) return { url: "demo.webm" };
+        const [, ent, who, step, h] = id.split("|");
+        return { url: svgUrl(scene(ent, who, 40 + (+step % 6) * 100, +h < 7 || +h > 19)) };
+      }
+      if (msg.type === "media_source/local_source/remove") {
+        for (const k of Object.keys(TREE)) TREE[k] = TREE[k].filter((x) => x.media_content_id !== msg.media_content_id);
+        return {};
+      }
+      return null;
+    },
+  });
+
+  function config() {
+    const cams = [{ entity: "camera.entree", title: "Entrée", media_root: "demo://camera.entree", snap_folder: "snap" }];
+    if (state.cams === "2") cams.push({ entity: "camera.jardin", title: "Jardin", media_root: "demo://camera.jardin", snap_folder: "snap" });
+    return { type: "custom:nvr-card", cameras: cams, live_layout: state.layout, aspect_ratio: "16/9", max_height: "60vh", event_gap: +state.gap, preroll: 5, refresh: 60, osd: state.osd === "true" };
+  }
+
+  function yaml(c) {
+    const lines = ["type: custom:nvr-card", "cameras:"];
+    for (const cam of c.cameras) lines.push(`  - entity: ${cam.entity}`, `    title: ${cam.title}`, `    media_root: media-source://media_source/local/${cam.title === "Entrée" ? "Entree" : cam.title}`, `    snap_folder: snap`);
+    for (const k of ["live_layout", "aspect_ratio", "max_height", "event_gap", "preroll", "refresh", "osd"]) lines.push(`${k}: ${c[k]}`);
+    return lines.join("\n");
+  }
+
+  const frame = document.getElementById("frame");
+  let card;
+  function render() {
+    frame.dataset.width = state.width;
+    document.querySelectorAll(".seg").forEach((seg) => seg.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === state[seg.dataset.key]))));
+    const c = config();
+    document.getElementById("yaml").textContent = yaml(c);
+    if (!customElements.get("nvr-card")) return;
+    if (!card) { card = document.createElement("nvr-card"); frame.appendChild(card); }
+    card.setConfig(c);
+    card.hass = hass();
+  }
+
+  document.querySelectorAll(".seg").forEach((seg) => seg.addEventListener("click", (ev) => {
+    const b = ev.target.closest("button");
+    if (!b) return;
+    state[seg.dataset.key] = b.dataset.v;
+    try { localStorage.setItem("nvr-card-demo", JSON.stringify(state)); } catch (e) { /* stockage indisponible */ }
+    render();
+  }));
+  document.getElementById("copy").addEventListener("click", (ev) => {
+    navigator.clipboard?.writeText(document.getElementById("yaml").textContent).then(() => { ev.target.textContent = "Copié ✓"; setTimeout(() => { ev.target.textContent = "Copier"; }, 1500); });
+  });
+  try { const v = typeof NVR_VERSION !== "undefined" ? NVR_VERSION : null; if (v) document.getElementById("ver").textContent = `v${v} · démo`; } catch (e) { /* ignoré */ }
+  render();
+})();
+</script>
+</body>
+</html>

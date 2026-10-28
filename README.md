@@ -32,6 +32,12 @@ Carte Lovelace pour Home Assistant qui transforme le tableau de bord en **enregi
 
 Un seul fichier JavaScript, sans dépendance.
 
+**[▶ Essayer la démo en ligne](https://marlboro62.github.io/nvr-card/docs/demo.html)** : la carte avec des images et des vidéos simulées (une ou deux caméras, frise, rafales de photos, lecture).
+
+![NVR Card](images/nvr.png)
+
+*Aperçu réalisé avec la démo : images dessinées, aucune caméra réelle.*
+
 ## Fonctionnalités
 
 - **Direct** de la caméra (lecteur intégré de Home Assistant, repli MJPEG automatique).
