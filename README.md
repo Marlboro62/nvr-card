@@ -34,7 +34,7 @@ Un seul fichier JavaScript, sans dépendance.
 
 **[▶ Essayer la démo en ligne](https://marlboro62.github.io/nvr-card/docs/demo.html)** : direct, frise, rafales de photos et lecture, avec une vraie vidéo libre de droits.
 
-![NVR Card](images/nvr.png)
+![NVR Card](https://raw.githubusercontent.com/Marlboro62/nvr-card/main/images/nvr.png)
 
 *Aperçu réalisé avec la démo. Vidéo : [« Balaclava assailant steals computer from car »](https://mixkit.co/free-stock-video/balaclava-assailant-steals-computer-from-car-31363/), [Mixkit](https://mixkit.co/), [licence Mixkit](https://mixkit.co/license/#videoFree) (scène jouée par des acteurs).*
 
