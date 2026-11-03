@@ -67,11 +67,12 @@ Les fichiers doivent être accessibles dans le navigateur multimédia de Home As
 
 ## Installation
 
-### Avec HACS (dépôt personnalisé)
+### Avec HACS (recommandé)
 
-1. HACS → ⋮ → **Dépôts personnalisés**.
-2. Dépôt : `https://github.com/Marlboro62/nvr-card`, type : **Tableau de bord** (Dashboard).
-3. Installe **NVR Card**, puis recharge la page (Ctrl+F5).
+1. Dans HACS, cherchez **NVR Card** et installez-la.
+2. Rechargez la page (Ctrl+F5).
+
+Si la carte n'apparaît pas encore dans la recherche de HACS, ajoutez le dépôt à la main : menu **⋮** → **Dépôts personnalisés**, adresse `https://github.com/Marlboro62/nvr-card`, type **Tableau de bord** (Dashboard), puis cherchez **NVR Card**.
 
 ### Manuelle
 
