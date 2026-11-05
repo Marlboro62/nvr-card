@@ -28,6 +28,9 @@
 
 # NVR Card
 
+[![HACS Default](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://hacs.xyz/)
+[![Release](https://img.shields.io/github/v/release/Marlboro62/nvr-card)](https://github.com/Marlboro62/nvr-card/releases)
+
 Carte Lovelace pour Home Assistant qui transforme le tableau de bord en **enregistreur vidéo (NVR)** : direct de la caméra, frise 24 h des enregistrements, détections en photos, lecture, téléchargement et suppression — sans quitter Home Assistant ni ouvrir le NAS.
 
 Un seul fichier JavaScript, sans dépendance.
