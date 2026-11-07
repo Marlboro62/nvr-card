@@ -13,7 +13,7 @@
  *   <media_root>/JJ.MM.AAAA/HHhMM.mkv
  *   <media_root>/JJ.MM.AAAA/<snap_folder>/HHhMM/HHhMMmSSs.jpg (ou HHhMMmSSs_1.jpg … _6.jpg pour une rafale)
  */
-const NVR_VERSION = '2.2.0-beta.1';
+const NVR_VERSION = '2.2.0-beta.2';
 const DAY = 86400;
 const ZOOMS = [24, 6, 1];
 const SPEEDS = [1, 2, 4, 8];
@@ -83,7 +83,8 @@ select{background:var(--nv-bg);color:inherit;border:1px solid var(--nv-line2);bo
 .live{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;border:1px solid var(--nv-line2);font-size:12px;font-weight:700;letter-spacing:1px;color:var(--nv-muted)}
 .ldot{width:7px;height:7px;border-radius:50%;background:currentColor}
 .mode-live .live{background:#e53935;border-color:#e53935;color:#fff}
-.viewer{position:relative;background:#000;aspect-ratio:16/9;overflow:hidden}
+.viewer{position:relative;background:#000;aspect-ratio:16/9;overflow:hidden;margin-inline:auto;box-shadow:0 0 0 100vmax #000;clip-path:inset(0 -100vmax)}
+.viewer:fullscreen{box-shadow:none;clip-path:none}
 .viewer:fullscreen{aspect-ratio:auto;max-height:none!important}
 .stage{position:absolute;inset:0}
 .stage>*{position:absolute;inset:0;width:100%;height:100%}
