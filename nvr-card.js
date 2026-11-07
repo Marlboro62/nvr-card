@@ -13,11 +13,11 @@
  *   <media_root>/JJ.MM.AAAA/HHhMM.mkv
  *   <media_root>/JJ.MM.AAAA/<snap_folder>/HHhMM/HHhMMmSSs.jpg (ou HHhMMmSSs_1.jpg … _6.jpg pour une rafale)
  */
-const NVR_VERSION = '2.1.4';
+const NVR_VERSION = '2.2.0-beta.1';
 const DAY = 86400;
 const ZOOMS = [24, 6, 1];
 const SPEEDS = [1, 2, 4, 8];
-const DEFAULTS = { live_layout: 'grid', aspect_ratio: '16/9', max_height: '70vh', event_gap: 60, preroll: 5, refresh: 60, osd: true, snap_folder: 'snap' };
+const DEFAULTS = { theme: 'nvr', live_layout: 'grid', aspect_ratio: '16/9', max_height: '70vh', event_gap: 60, preroll: 5, refresh: 60, osd: true, snap_folder: 'snap' };
 
 const pad = (n) => String(n).padStart(2, '0');
 const hms = (s) => {
@@ -26,6 +26,14 @@ const hms = (s) => {
 };
 const hm = (s) => hms(s).slice(0, 5);
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+/** Classe de thème, comme les autres cartes : nvr (noir, par défaut), v2 (bleu nuit), auto (clair ou sombre selon HA), ha (thème HA). */
+const themeClass = (theme, hass) => {
+  const light = hass && hass.themes && hass.themes.darkMode === false;
+  if (theme === 'ha') return ['th-ha', light ? 'light' : ''];
+  if (theme === 'auto') return ['th-v2', light ? 'light' : ''];
+  if (theme === 'v2') return ['th-v2', ''];
+  return ['', ''];
+};
 const clean = (o) => {
   const r = {};
   for (const [k, v] of Object.entries(o || {})) if (v !== '' && v !== undefined && v !== null) r[k] = v;
@@ -33,12 +41,26 @@ const clean = (o) => {
 };
 
 const STYLE = `
-:host{display:block}
-ha-card{background:#0b0d10;color:#d6dbe1;overflow:hidden;border:1px solid #1d232b}
+:host{display:block;
+  --nv-bg:#0b0d10;--nv-panel:#11151a;--nv-line:#1d232b;--nv-line2:#2a323c;--nv-hover:#1c232c;--nv-text:#d6dbe1;--nv-muted:#aeb6c0;
+  --nv-dim:#6b7682;--nv-accent:#4fc3f7;--nv-strong:#fff;--nv-trackline:#232b34;--nv-grid:#1a2129}
+/* thèmes : comme les autres cartes (v2 bleu nuit, auto clair ou sombre, ha = couleurs du thème Home Assistant) */
+ha-card.th-v2{--nv-bg:#1a2434;--nv-panel:#212d40;--nv-line:#2f3d55;--nv-line2:#2f3d55;--nv-hover:#2a3850;--nv-text:#e7edf5;--nv-muted:#8fa0b8;
+  --nv-dim:#6f8199;--nv-accent:#1d93e3;--nv-strong:#fff;--nv-trackline:#2f3d55;--nv-grid:#263349;border-radius:18px}
+ha-card.th-v2.light{--nv-bg:#fff;--nv-panel:#f2f5f9;--nv-line:#dbe2ec;--nv-line2:#dbe2ec;--nv-hover:#e6ecf3;--nv-text:#1a2434;--nv-muted:#5b6b82;
+  --nv-dim:#7b8aa0;--nv-accent:#1673b8;--nv-strong:#1a2434;--nv-trackline:#dbe2ec;--nv-grid:#e6ecf3;box-shadow:0 1px 3px rgba(26,36,52,.08)}
+ha-card.th-ha{--nv-bg:var(--ha-card-background,var(--card-background-color,#fff));
+  --nv-panel:color-mix(in srgb,var(--primary-text-color,#000) 5%,var(--nv-bg));--nv-line:var(--divider-color,rgba(127,127,127,.25));
+  --nv-line2:var(--divider-color,rgba(127,127,127,.25));--nv-hover:color-mix(in srgb,var(--primary-color,#1d93e3) 14%,transparent);
+  --nv-text:var(--primary-text-color,#1f2937);--nv-muted:var(--secondary-text-color,#6b7280);--nv-dim:var(--disabled-text-color,var(--secondary-text-color,#9ca3af));
+  --nv-accent:var(--primary-color,#1d93e3);--nv-strong:var(--primary-text-color,#1f2937);--nv-trackline:var(--divider-color,rgba(127,127,127,.25));
+  --nv-grid:color-mix(in srgb,var(--primary-text-color,#000) 8%,transparent);
+  border-radius:var(--ha-card-border-radius,12px);border:var(--ha-card-border-width,1px) solid var(--ha-card-border-color,var(--divider-color,#e0e0e0))}
+ha-card{background:var(--nv-bg);color:var(--nv-text);overflow:hidden;border:1px solid var(--nv-line)}
 ha-icon{--mdc-icon-size:20px}
 [hidden]{display:none!important}
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;padding:0}
-.top{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#11151a;border-bottom:1px solid #1d232b}
+.top{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--nv-panel);border-bottom:1px solid var(--nv-line)}
 .cam{display:flex;align-items:center;gap:8px;flex:1;min-width:0;font-weight:500;white-space:nowrap;overflow:hidden}
 .camname{overflow:hidden;text-overflow:ellipsis}
 .rec{width:9px;height:9px;border-radius:50%;background:#555;flex:none}
@@ -47,18 +69,18 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;pad
 .mode-snap .rec{background:#fb8c00}
 @keyframes blink{50%{opacity:.25}}
 .tabs{display:flex;gap:4px;overflow-x:auto;min-width:0;scrollbar-width:none}
-.tab{padding:5px 10px;border-radius:6px;border:1px solid #2a323c;font-size:12px;color:#aeb6c0;white-space:nowrap}
-.tab:hover{background:#1c232c;color:#fff}
-.tab.on{background:#1c232c;color:#fff;border-color:#4fc3f7}
+.tab{padding:5px 10px;border-radius:6px;border:1px solid var(--nv-line2);font-size:12px;color:var(--nv-muted);white-space:nowrap}
+.tab:hover{background:var(--nv-hover);color:var(--nv-strong)}
+.tab.on{background:var(--nv-hover);color:var(--nv-strong);border-color:var(--nv-accent)}
 .daynav{display:flex;align-items:center;gap:2px}
-select{background:#0b0d10;color:inherit;border:1px solid #2a323c;border-radius:6px;padding:5px 6px;font:inherit;font-size:13px}
-.ib{width:34px;height:34px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#aeb6c0}
-.ib:hover,.txt:hover{background:#1c232c;color:#fff}
-.ib.on{color:#4fc3f7}
-.ib.big{width:40px;height:40px;background:#1c232c;color:#fff}
+select{background:var(--nv-bg);color:inherit;border:1px solid var(--nv-line2);border-radius:6px;padding:5px 6px;font:inherit;font-size:13px}
+.ib{width:34px;height:34px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:var(--nv-muted)}
+.ib:hover,.txt:hover{background:var(--nv-hover);color:var(--nv-strong)}
+.ib.on{color:var(--nv-accent)}
+.ib.big{width:40px;height:40px;background:var(--nv-hover);color:var(--nv-strong)}
 .ib.danger:hover{color:#ef5350}
-.txt{height:30px;padding:0 8px;border-radius:8px;border:1px solid #2a323c;font-size:12px;color:#aeb6c0;font-variant-numeric:tabular-nums}
-.live{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;border:1px solid #2a323c;font-size:12px;font-weight:700;letter-spacing:1px;color:#aeb6c0}
+.txt{height:30px;padding:0 8px;border-radius:8px;border:1px solid var(--nv-line2);font-size:12px;color:var(--nv-muted);font-variant-numeric:tabular-nums}
+.live{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;border:1px solid var(--nv-line2);font-size:12px;font-weight:700;letter-spacing:1px;color:var(--nv-muted)}
 .ldot{width:7px;height:7px;border-radius:50%;background:currentColor}
 .mode-live .live{background:#e53935;border-color:#e53935;color:#fff}
 .viewer{position:relative;background:#000;aspect-ratio:16/9;overflow:hidden}
@@ -71,7 +93,7 @@ select{background:#0b0d10;color:inherit;border:1px solid #2a323c;border-radius:6
 .tile>ha-camera-stream,.tile>img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .g2r-frame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
 .tile .lbl{position:absolute;left:6px;top:6px;font:12px ui-monospace,monospace;color:#fff;text-shadow:0 0 3px #000,0 0 6px #000;z-index:1;pointer-events:none}
-.tile:hover{outline:2px solid #4fc3f7;outline-offset:-2px}
+.tile:hover{outline:2px solid var(--nv-accent);outline-offset:-2px}
 .osd{position:absolute;top:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;color:#fff;text-shadow:0 0 3px #000,0 0 6px #000;pointer-events:none}
 .osd.tl{left:10px}.osd.tr{right:10px}
 .is-grid .osd.tl{display:none}
@@ -81,33 +103,33 @@ select{background:#0b0d10;color:inherit;border:1px solid #2a323c;border-radius:6
 .nav.prev{left:8px}.nav.next{right:8px}
 .mode-snap .nav{display:flex}
 .msg{position:absolute;left:10%;right:10%;top:40%;text-align:center;background:rgba(0,0,0,.75);padding:12px;border-radius:8px;font-size:13px;display:none;z-index:2}
-.toast{position:absolute;right:10px;bottom:10px;background:rgba(20,25,31,.92);border:1px solid #2a323c;padding:6px 10px;border-radius:6px;font-size:12px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:2}
+.toast{position:absolute;right:10px;bottom:10px;background:rgba(20,25,31,.92);border:1px solid var(--nv-line2);padding:6px 10px;border-radius:6px;font-size:12px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:2}
 .toast.on{opacity:1}
-.bar{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 8px;background:#11151a;flex-wrap:wrap}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 8px;background:var(--nv-panel);flex-wrap:wrap}
 .grp{display:flex;align-items:center;gap:2px}
-.clock{font-family:ui-monospace,monospace;font-size:14px;color:#fff;font-variant-numeric:tabular-nums}
-.timeline{padding:2px 10px 10px;background:#11151a;border-bottom:1px solid #1d232b;user-select:none}
-.ticks{position:relative;height:16px;font:10px ui-monospace,monospace;color:#6b7682;overflow:hidden}
+.clock{font-family:ui-monospace,monospace;font-size:14px;color:var(--nv-strong);font-variant-numeric:tabular-nums}
+.timeline{padding:2px 10px 10px;background:var(--nv-panel);border-bottom:1px solid var(--nv-line);user-select:none}
+.ticks{position:relative;height:16px;font:10px ui-monospace,monospace;color:var(--nv-dim);overflow:hidden}
 .ticks span{position:absolute;transform:translateX(-50%);white-space:nowrap;top:1px}
-.track{position:relative;height:34px;background:#0b0d10;border:1px solid #232b34;border-radius:4px;cursor:crosshair;overflow:hidden;touch-action:none}
+.track{position:relative;height:34px;background:var(--nv-bg);border:1px solid var(--nv-trackline);border-radius:4px;cursor:crosshair;overflow:hidden;touch-action:none}
 .track.drag{cursor:grabbing}
-.grid{position:absolute;top:0;bottom:0;width:1px;background:#1a2129}
+.grid{position:absolute;top:0;bottom:0;width:1px;background:var(--nv-grid)}
 .seg{position:absolute;top:0;bottom:0;background:linear-gradient(#1b5e20,#2e7d32);opacity:.55}
-.future{position:absolute;top:0;bottom:0;right:0;background:repeating-linear-gradient(45deg,transparent 0 4px,rgba(255,255,255,.05) 4px 8px)}
+.future{position:absolute;top:0;bottom:0;right:0;background:repeating-linear-gradient(45deg,transparent 0 4px,color-mix(in srgb,var(--nv-text) 8%,transparent) 4px 8px)}
 .mk{position:absolute;top:6px;bottom:6px;min-width:3px;background:#ffa726;border-radius:2px;box-shadow:0 0 4px rgba(255,167,38,.6)}
-.cursor{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:#4fc3f7;box-shadow:0 0 6px #4fc3f7;pointer-events:none;display:none}
+.cursor{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--nv-accent);box-shadow:0 0 6px var(--nv-accent);pointer-events:none;display:none}
 .track.drag .cursor{background:#fff;box-shadow:0 0 8px #fff}
 .hover{position:absolute;top:2px;transform:translateX(-50%);font:10px ui-monospace,monospace;background:#000c;color:#fff;padding:1px 4px;border-radius:3px;pointer-events:none;display:none}
-.evhead{display:flex;justify-content:space-between;padding:8px 12px 0;font-size:11px;color:#8a95a1;text-transform:uppercase;letter-spacing:.8px}
+.evhead{display:flex;justify-content:space-between;padding:8px 12px 0;font-size:11px;color:var(--nv-muted);text-transform:uppercase;letter-spacing:.8px}
 .events{display:flex;gap:8px;overflow-x:auto;padding:8px 10px 12px;scrollbar-width:thin}
 .ev{flex:none;width:128px;cursor:pointer;border-radius:6px;padding:3px;border:1px solid transparent}
-.ev:hover{background:#151b22}
-.ev.sel{border-color:#ffa726;background:#1a1610}
-.th{position:relative;aspect-ratio:16/9;background:#1a2028;border-radius:4px;overflow:hidden}
+.ev:hover{background:var(--nv-hover)}
+.ev.sel{border-color:#ffa726;background:color-mix(in srgb,#ffa726 12%,var(--nv-bg))}
+.th{position:relative;aspect-ratio:16/9;background:var(--nv-hover);border-radius:4px;overflow:hidden}
 .th img{width:100%;height:100%;object-fit:cover;display:block}
 .th .n{position:absolute;right:4px;bottom:4px;font:600 10px ui-monospace,monospace;background:#000b;color:#fff;padding:1px 4px;border-radius:3px}
-.ev .t{font:12px ui-monospace,monospace;margin-top:4px;text-align:center;color:#cfd6dd}
-.empty{color:#6b7682;font-size:13px;padding:10px}
+.ev .t{font:12px ui-monospace,monospace;margin-top:4px;text-align:center;color:var(--nv-text)}
+.empty{color:var(--nv-dim);font-size:13px;padding:10px}
 @media (max-width:520px){.clock{display:none}.ib{width:30px;height:30px}}
 `;
 
@@ -163,7 +185,7 @@ class NvrCard extends HTMLElement {
     this._data = null;
     this._days = [];
     this._built = false;
-    if (this._hass) { this._build(); this._start(); }
+    if (this._hass) { this._build(); this._start(); this._applyTheme(); }
   }
 
   get _cam() { return this._cams[this._camIdx]; }
@@ -173,10 +195,20 @@ class NvrCard extends HTMLElement {
     return cam.title || (so && so.attributes.friendly_name) || cam.entity;
   }
 
+  _applyTheme() {
+    const card = this.shadowRoot.querySelector('ha-card');
+    if (!card) return;
+    const [t, l] = themeClass(this._config.theme, this._hass);
+    card.classList.toggle('th-v2', t === 'th-v2');
+    card.classList.toggle('th-ha', t === 'th-ha');
+    card.classList.toggle('light', l === 'light');
+  }
+
   set hass(hass) {
     this._hass = hass;
     if (!this._config) return;
-    if (!this._built) { this._build(); this._start(); return; }
+    if (!this._built) { this._build(); this._start(); this._applyTheme(); return; }
+    this._applyTheme();
     for (const [ent, el] of this._liveEls) {
       if (el.localName !== 'ha-camera-stream') continue;
       el.hass = hass;
@@ -1037,6 +1069,7 @@ const LABELS = {
   preroll: 'Pré-lecture avant détection',
   refresh: 'Rafraîchissement du jour',
   osd: 'Incruster nom et heure sur l\'image',
+  theme: 'Couleurs de la carte',
 };
 const HELPERS = {
   media_root: 'Dossier qui contient les sous-dossiers JJ.MM.AAAA. Vide = direct seulement.',
@@ -1046,6 +1079,7 @@ const HELPERS = {
   max_height: 'Par exemple 60vh ou 500px.',
   event_gap: 'Photos espacées de moins de X secondes = un seul événement.',
   osd: 'À désactiver si la caméra incruste déjà la date et son nom.',
+  theme: 'Le cadre, les barres, la frise et les vignettes suivent ce choix ; l\'image reste sur fond noir.',
 };
 const EDITOR_STYLE = `
 .cam{border:1px solid var(--divider-color);border-radius:10px;padding:8px 12px 12px;margin-bottom:12px}
@@ -1149,6 +1183,12 @@ class NvrCardEditor extends HTMLElement {
         { name: 'refresh', selector: { number: { min: 15, max: 900, step: 5, mode: 'box', unit_of_measurement: 's' } } },
       ] },
       { name: 'osd', selector: { boolean: {} } },
+      { name: 'theme', selector: { select: { mode: 'dropdown', options: [
+        { value: 'nvr', label: 'Style NVR (noir)' },
+        { value: 'v2', label: 'Style MyElectricalData (bleu nuit)' },
+        { value: 'auto', label: 'Style MyElectricalData, clair ou sombre selon Home Assistant' },
+        { value: 'ha', label: 'Thème Home Assistant (clair ou sombre)' },
+      ] } } },
     ];
   }
 

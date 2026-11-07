@@ -132,6 +132,7 @@ osd: false
 | `preroll` | `5` | Secondes de vidéo lues avant la détection. |
 | `refresh` | `60` | Rafraîchissement du jour en cours (secondes). |
 | `osd` | `true` | Incruste le nom et l'heure sur l'image (à désactiver si la caméra le fait déjà). |
+| `theme` | `nvr` | Couleurs de la carte : `nvr` (noir), `v2` (bleu nuit, comme les autres cartes), `auto` (clair ou sombre selon Home Assistant) ou `ha` (couleurs du thème Home Assistant). L'image reste sur fond noir. |
 
 L'ancienne syntaxe à une caméra (`entity:` / `media_root:` à la racine) reste acceptée.
 
